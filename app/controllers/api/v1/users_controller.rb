@@ -1,4 +1,5 @@
 class Api::V1::UsersController < ApplicationController
+  skip_before_action :authorized, only: [:create]
   before_action :set_user, only: [:show, :update, :destroy]
 
   # GET /users
@@ -10,15 +11,15 @@ class Api::V1::UsersController < ApplicationController
 
   # GET /users/1
   def show
-    render json: user
+    render json: { user: UserSerializer.new(current_user) }, status: :accepted
   end
 
   # POST /users
   def create
     user = User.create(user_params)
-
     if user.valid?
-      render json: {user: UserSerializer.new(user)}, status: :created #, location: user
+      token = encode_token(user_id: user.id)
+      render json: {user: UserSerializer.new(user),jwt: token}, status: :created #, location: user
     else
       render json: {error: user.errors.messages}, status: :not_acceptable
     end
